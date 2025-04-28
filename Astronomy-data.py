@@ -42,6 +42,18 @@ class AstronomyApp:
         self.search_entry.pack(side=tk.LEFT, padx=5)
         ttk.Button(search_frame, text="Search", command=self.search_planet).pack(side=tk.LEFT)
 
+         # Theme Switch
+        theme_frame = ttk.LabelFrame(self.root, text="🎨 Theme")
+        theme_frame.pack(pady=5, padx=10, fill="x")
+
+        self.theme_var = tk.StringVar(value="dark")
+        ttk.Radiobutton(theme_frame, text="🌑 Dark", variable=self.theme_var, value="dark", command=self.change_theme).pack(side=tk.LEFT, padx=10)
+        ttk.Radiobutton(theme_frame, text="🌕 Light", variable=self.theme_var, value="light", command=self.change_theme).pack(side=tk.LEFT, padx=10)
+
+
+        # 3D Orbit Button
+        ttk.Button(self.root, text="🌐 3D Orbit Simulation", command=self.show_3d_orbit).pack(pady=5)
+
         self.output_box = scrolledtext.ScrolledText(self.root, wrap=tk.WORD, font=("Consolas", 10), height=10)
         self.output_box.pack(padx=10, pady=10, fill="both", expand=True)
 
@@ -52,6 +64,7 @@ class AstronomyApp:
         self.chart = FigureCanvasTkAgg(self.figure, self.chart_frame)
         self.chart.get_tk_widget().pack(fill="both", expand=True)
 
+#fetch data
     def fetch_data(self):
         url = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
         query = {
@@ -65,12 +78,14 @@ class AstronomyApp:
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
+#process
     def process_data(self):
         self.processed_data = [
             p for p in self.data if p.get("pl_orbper") and p.get("pl_rade")
         ]
         self.output_box.insert(tk.END, f"✅ Processed {len(self.processed_data)} records.\n")
 
+#2d graph
     def visualize_data(self):
         if not self.processed_data:
             messagebox.showwarning("Warning", "No data to visualize. Please process first.")
@@ -96,6 +111,7 @@ class AstronomyApp:
         self.ani = FuncAnimation(self.figure, animate, interval=1000, blit=False)
         self.output_box.insert(tk.END, "✅ Chart with animation updated.\n")
 
+#search
     def search_planet(self):
         keyword = self.search_entry.get().strip().lower()
         if not keyword:
@@ -108,6 +124,7 @@ class AstronomyApp:
             self.output_box.window_create(tk.END, window=ttk.Button(self.root, text="ℹ️", command=lambda p=p: self.show_popup(p)))
             self.output_box.insert(tk.END, "\n")
 
+#popup planets
     def show_popup(self, planet):
         radius = planet.get("pl_rade", 0)
         if radius < 1.5:
@@ -138,6 +155,41 @@ class AstronomyApp:
             img_label.pack(pady=10)
         else:
             Label(popup, text="🔍 Image not found").pack()
+
+#switch theme
+    def change_theme(self):
+        theme = self.theme_var.get()
+        if theme == "dark":
+            self.root.configure(bg="#1e1e1e")
+            style = ttk.Style()
+            style.theme_use("clam")
+            style.configure(".", background="#1e1e1e", foreground="white", fieldbackground="#2e2e2e")
+            style.configure("TButton", background="#333", foreground="white")
+            style.configure("TLabel", background="#1e1e1e", foreground="white")
+        else:
+            self.root.configure(bg="SystemButtonFace")
+            style = ttk.Style()
+            style.theme_use("default")
+
+#3d graph
+    def show_3d_orbit(self):
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D
+        import numpy as np
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        theta = np.linspace(0, 2 * np.pi, 100)
+        x = np.cos(theta)
+        y = np.sin(theta)
+        z = np.zeros_like(theta)
+
+        ax.plot(x, y, z, label='Orbit')
+        ax.scatter([0], [0], [0], c='orange', label='Star')
+        ax.scatter([1], [0], [0], c='blue', label='Planet')
+        ax.set_title('3D Orbit Simulation')
+        ax.legend()
+        plt.show()
 
 if __name__ == "__main__":
     root = tk.Tk()
